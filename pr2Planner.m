@@ -77,7 +77,73 @@ classdef pr2Planner
     end
     
     
-    function [xtraj,snopt_info,infeasible_constraint,q_end_nom] = createLinePlan(obj, q0, pos_init, pos_final, T, basefixed)
+    function [xtraj,snopt_info,infeasible_constraint,q_end_nom] = ...
+            createReachAndLinePlan(obj, q0, pos_reach, pos_final, T, basefixedOnReach)
+      Nr = 10;
+      Nl = 10;
+      Tr = T/2;
+      Tl = T;
+      t_vec_r = linspace(0,Tr,Nr);
+      t_vec_l = linspace(Tr,Tl,Nl);
+      Allcons = cell(0,1);
+      
+      %% 1. Reach
+      
+      % 1.1 create posture constraint
+      posture_constraint = PostureConstraint(obj.r);
+      
+      % 1.2 stick on the ground
+      posture_constraint.setJointLimits(3,0,0); % base_z
+      posture_constraint.setJointLimits(4,0,0); % base_roll
+      posture_constraint.setJointLimits(5,0,0); % base_pitch
+      Allcons{end+1} = posture_constraint;
+      
+      % 1.3 set iteration limit
+      ikoptions = IKoptions(obj.r);
+      ikoptions = ikoptions.setIterationsLimit(1000000);
+      
+      % 1.4 find gripper and base indices
+      r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
+      r_gripper_pt = [0,0,0]';
+      base_idx = findLinkInd(obj.r,'base_link');
+      base_pt = [0,0,0]';
+      
+      % 1.5 create hand position constraint for reaching
+      r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_final,pos_final,[Tr,Tr]);
+      Allcons{end+1} = r_gripper_cons;
+      
+      if(basefixedOnReach)        
+        %basefixedReachConstraint = cell(1,4);
+        Allcons{end+1} = WorldFixedBodyPostureConstraint(obj.r,base_idx,[0 0 0]',[0,Tr]);
+        Allcons{end+1} = WorldFixedBodyPostureConstraint(obj.r,base_idx,[0 1 0]',[0,Tr]);
+        Allcons{end+1} = WorldFixedBodyPostureConstraint(obj.r,base_idx,[1 0 0]',[0,Tr]);
+        Allcons{end+1} = WorldFixedBodyPostureConstraint(obj.r,base_idx,[1 1 0]',[0,Tr]);
+      end
+      
+      
+      % 1.6 compute seeds
+      q_start_nom = q0;
+      [q_reach_nom,snopt_info_ik,infeasible_constraint_ik] = inverseKin(obj.r,q_start_nom,q_start_nom,...
+        Allcons{:},...
+        ikoptions);
+      qtraj_guess1 = PPTrajectory(foh([0 Tr],[q_start_nom, q_reach_nom]));
+      
+      % do IK
+      % function [xtraj,info,infeasible_constraint]= inverseKinTraj(obj,t,q_seed_traj,q_nom_traj,varargin)
+      [xtraj,snopt_info,infeasible_constraint] = inverseKinTraj(obj.r,...
+        t_vec,qtraj_guess1,qtraj_guess1,...
+        posture_constraint,r_gripper_cons,ground_cons{:},pos_constraint{:},ikoptions);
+    
+      q_end = xtraj.eval(xtraj.tspan(end));
+
+      % do visualize
+      if obj.doVisualization && snopt_info <= 50
+        obj.v.playback(xtraj);
+      end
+    end
+    
+    
+        function [xtraj,snopt_info,infeasible_constraint,q_end_nom] = createLinePlan(obj, q0, pos_init, pos_final, T, basefixed)
       N = 10;
       t_vec = linspace(0,T,N);
       
