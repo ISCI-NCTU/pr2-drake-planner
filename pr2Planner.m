@@ -77,7 +77,7 @@ classdef pr2Planner
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createReachAndLinePlan(obj, q0, pos_reach, pos_final, T, basefixedOnReach,basefixedOnLine)
       Nr = 10;
-      Nl = 10;
+      Nl = 30;
       Tr = T/2;
       Tl = T;
       t_vec_r = linspace(0,Tr,Nr);
@@ -103,7 +103,7 @@ classdef pr2Planner
       
       % 1.4 find gripper and base indices
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      r_gripper_pt = [0,0,0]';
+      r_gripper_pt = [0.13,0,0]';
       base_idx = findLinkInd(obj.r,'base_link');
       base_pt = [0,0,0]';
       
@@ -165,6 +165,7 @@ classdef pr2Planner
     
     
       FinalCons = cell(0,0);
+      FinalCons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[-inf,inf]); 
       for i=1:length(Allcons)
           if(~isa(Allcons{i},'PostureChangeConstraint'))
               if(Allcons{i}.isTimeValid(Tl))

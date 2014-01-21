@@ -1,5 +1,5 @@
-%clear all
-%close all
+clear all
+close all
 warning('off','all');
 
 DRAKE_PATH = '/home/drc/drc/software/drake';
@@ -16,14 +16,14 @@ q0 = zeros(dof, 1);
 planner = pr2Planner(r);
 
 drawer_close_pos = [1,0,1]'; % specify drawer pose (x,y,z)
-drawer_open_pos =  [0.5,0,1]';  
+drawer_open_pos =  [0.8,0,1]';  
 
 lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
 
 lcmgl.glColor3f(1,0,0);
-lcmgl.sphere(drawer_close_pos,0.1,5,5);
+lcmgl.sphere(drawer_close_pos,0.05,100,100);
 lcmgl.glColor3f(0,1,0);
-lcmgl.sphere(drawer_open_pos,0.1,5,5);
+lcmgl.sphere(drawer_open_pos,0.05,100,100);
 lcmgl.switchBuffers;
 
 T = 50; % seconds
