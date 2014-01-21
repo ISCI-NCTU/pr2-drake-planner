@@ -1,4 +1,5 @@
-clear classes
+%clear all
+%close all
 warning('off','all');
 
 DRAKE_PATH = '/home/drc/drc/software/drake';
@@ -18,16 +19,25 @@ drawer_close_pos = [1,1,1]'; % specify drawer pose (x,y,z)
 drawer_open_pos =  [0.5,1,1]';  
 
 
-
-T = 10; % seconds
+T = 50; % seconds
 basefixedOnReach = false;
-
+basefixedOnLine = true;
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-    planner.createReachAndLinePlan(q0, drawer_close_pos, drawer_open_pos, T, basefixedOnReach)
+    planner.createReachAndLinePlan(q0, drawer_close_pos, drawer_open_pos, T, basefixedOnReach, basefixedOnLine);
 snopt_info;
 
+kinsol = r.doKinematics(q_end(1:dof));
+reality_reach2 = r.forwardKin(kinsol,findLinkInd(r,'r_gripper_palm_link'),[0,0,0]');
+reality_reach2
 
 
+% lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
+% 
+% lcmgl.glColor3f(1,0,0);
+% lcmgl.sphere(drawer_close_pos,0.1,5,5);
+% lcmgl.glColor3f(0,1,0);
+% lcmgl.sphere(drawer_open_pos,0.1,5,5);
+% lcmgl.switchBuffers;
 
 
 
