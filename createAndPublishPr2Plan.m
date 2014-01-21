@@ -15,9 +15,16 @@ q0 = zeros(dof, 1);
 
 planner = pr2Planner(r);
 
-drawer_close_pos = [1,1,1]'; % specify drawer pose (x,y,z)
-drawer_open_pos =  [0.5,1,1]';  
+drawer_close_pos = [1,0,1]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.5,0,1]';  
 
+lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
+
+lcmgl.glColor3f(1,0,0);
+lcmgl.sphere(drawer_close_pos,0.1,5,5);
+lcmgl.glColor3f(0,1,0);
+lcmgl.sphere(drawer_open_pos,0.1,5,5);
+lcmgl.switchBuffers;
 
 T = 50; % seconds
 basefixedOnReach = false;
@@ -31,14 +38,8 @@ reality_reach2 = r.forwardKin(kinsol,findLinkInd(r,'r_gripper_palm_link'),[0,0,0
 reality_reach2
 
 
-% lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
-% 
-% lcmgl.glColor3f(1,0,0);
-% lcmgl.sphere(drawer_close_pos,0.1,5,5);
-% lcmgl.glColor3f(0,1,0);
-% lcmgl.sphere(drawer_open_pos,0.1,5,5);
-% lcmgl.switchBuffers;
 
+planner.v.playback(xtraj);
 
 
 

@@ -17,12 +17,10 @@ classdef pr2Planner
   methods 
     function obj = pr2Planner(r)
       obj.r = r;
-      obj.doVisualization = true;
+      obj.doVisualization = false;
       
-      if obj.doVisualization
-        obj.v = obj.r.constructVisualizer;
-        obj.v.playback_speed = 5;
-      end
+      obj.v = obj.r.constructVisualizer;
+      obj.v.playback_speed = 5;
     end
     
     function [xtraj,snopt_info,infeasible_constraint,q_end] = createPointPlan(obj, q0, pos_final, T, basefixed)
@@ -84,7 +82,7 @@ classdef pr2Planner
       Tl = T;
       t_vec_r = linspace(0,Tr,Nr);
       t_vec_l = linspace(Tr,Tl,Nl);
-      t_vec = linspace(0,T,Nr+Nl);
+      t_vec = linspace(0,T,Nr+Nl-1);
       Allcons = cell(0,1);
       
       %% 1. Reach
@@ -101,6 +99,7 @@ classdef pr2Planner
       % 1.3 set iteration limit
       ikoptions = IKoptions(obj.r);
       ikoptions = ikoptions.setIterationsLimit(1000000);
+      ikoptions = ikoptions.setDebug(true);
       
       % 1.4 find gripper and base indices
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
@@ -121,6 +120,8 @@ classdef pr2Planner
         Allcons{end+1} = PostureChangeConstraint(obj.r,6,0,0,[0,Tr]); % base_yaw
       end
       
+      
+      
       %% 2. Line trajectory
       % 2.1 create hand position constraint for final pose
       
@@ -128,7 +129,8 @@ classdef pr2Planner
      
       gripper_pos = repmat(pos_reach,1,Nl) + (pos_final - pos_reach)*linspace(0,1,Nl);
       for i=1:Nl,
-        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
+        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,...
+            gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
       end
       
       if(basefixedOnLine)        
@@ -140,16 +142,42 @@ classdef pr2Planner
         Allcons{end+1} = PostureChangeConstraint(obj.r,6,0,0,[Tr,Tl]); % base_yaw
       end
       
+      % 2.2 fix torso while doing line
+      torso_id = obj.r.findJointInd('torso_lift_joint');
+      Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[Tr,Tl]); 
+      
+      
       %% 3 compute seeds
       q_start_nom = q0;
-      [q_reach_nom,snopt_info_ik,infeasible_constraint_ik] = ...
+      ReachCons = cell(0,0);
+      for i=1:length(Allcons)
+          if(~isa(Allcons{i},'PostureChangeConstraint'))
+              if(Allcons{i}.isTimeValid(Tr))
+                 ReachCons{end+1} = Allcons{i};
+              end
+          end
+      end
+      [q_reach_nom,snopt_info_ik,infeasible_constraint_ik1] = ...
           inverseKin(obj.r,q_start_nom,q_start_nom,...
-          Allcons{:}, ikoptions);
+          ReachCons{:}, ikoptions);
+    snopt_info_ik
+    infeasible_constraint_ik1
     
-      [q_final_nom,snopt_info_ik,infeasible_constraint_ik] = ...
+    
+      FinalCons = cell(0,0);
+      for i=1:length(Allcons)
+          if(~isa(Allcons{i},'PostureChangeConstraint'))
+              if(Allcons{i}.isTimeValid(Tl))
+                 FinalCons{end+1} = Allcons{i};
+              end
+          end
+      end
+    
+      [q_final_nom,snopt_info_ik,infeasible_constraint_ik2] = ...
           inverseKin(obj.r,q_reach_nom,q_reach_nom,...
-          Allcons{:}, ikoptions);
-    
+          FinalCons{:}, ikoptions);
+    snopt_info_ik
+    infeasible_constraint_ik2
       qtraj_guess = PPTrajectory(foh([0 Tr Tl],[q_start_nom, q_reach_nom, q_final_nom]));
       
       %% 4. do IK Traj
@@ -157,7 +185,8 @@ classdef pr2Planner
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-    
+    snopt_info
+    infeasible_constraint
       q_end = xtraj.eval(xtraj.tspan(end));
 
       % do visualize
