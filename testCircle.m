@@ -1,5 +1,4 @@
-%clear all
-%close all
+
 warning('off','all');
 
 DRAKE_PATH = '/home/drc/drc/software/drake';

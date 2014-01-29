@@ -12,6 +12,7 @@ classdef pr2Planner
     r
     doVisualization
     v
+    plan_pub
   end
   
   methods 
@@ -21,6 +22,11 @@ classdef pr2Planner
       
       obj.v = obj.r.constructVisualizer;
       obj.v.playback_speed = 5;
+      
+      joint_names = r.getStateFrame.coordinates(1:r.getNumDOF);
+      % todo add: walk plan publisher
+      obj.plan_pub = RobotPlanPublisherWKeyFrames_PR2('CANDIDATE_MANIP_PLAN',true,joint_names);
+      
     end
     
     function [xtraj,snopt_info,infeasible_constraint,q_end] = createPointPlan(obj, q0, pos_final, T, basefixed)
@@ -71,6 +77,9 @@ classdef pr2Planner
       if obj.doVisualization && snopt_info <= 50
         obj.v.playback(xtraj);
       end
+      
+      % publish plan
+      obj.publishTraj(xtraj,snopt_info);
     end
     
     
@@ -341,6 +350,8 @@ classdef pr2Planner
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
+    
+      obj.publishTraj(xtraj, snopt_info);
     snopt_info
     infeasible_constraint
       q_end = xtraj.eval(xtraj.tspan(end));
@@ -351,5 +362,36 @@ classdef pr2Planner
       end
     end
     
+    function publishTraj(obj,xtraj,snopt_info)
+      utime = etime(clock,[1970 1 1 0 0 0])*1e6;
+      nq_pr2 = obj.r.getNumDOF;
+      ts = xtraj.pp.breaks;
+      q = xtraj.eval(ts);
+      xtraj_pr2 = zeros(nq_pr2,length(ts));
+      xtraj_pr2(:,:) = q(1:nq_pr2,:);
+      snopt_info_vector = snopt_info*ones(1, size(xtraj_pr2,2));
+      
+      obj.plan_pub.publish(xtraj_pr2,ts,utime,snopt_info_vector);
+      
+      
+      %% render trajectory
+%       ts_line = linspace(xtraj.tspan(1),xtraj.tspan(2),200);
+%       x_line = xtraj.eval(ts_line);
+%       obj.lcmgl.glColor3f(1,0,0); 
+%       obj.lcmgl.glBegin(obj.lcmgl.LCMGL_LINES);
+%       for i=1:length(ts_line),
+%         q_line = x_line(1:nq_pr2,i);
+%         kinsol = obj.r.doKinematics(q_line);
+% %         drill_pts = obj.r.forwardKin(kinsol,obj.hand_body,...
+% %           [obj.drill_pt_on_hand, obj.drill_pt_on_hand + .0254*obj.drill_axis_on_hand]);
+% %         obj.lcmgl.line3(drill_pts(1,1),drill_pts(2,1),drill_pts(3,1),...
+% %           drill_pts(1,2),drill_pts(2,2),drill_pts(3,2));
+%         
+%         drill_pt = obj.r.forwardKin(kinsol,obj.hand_body,obj.drill_pt_on_hand);
+%         obj.lcmgl.glVertex3d(drill_pt(1),drill_pt(2),drill_pt(3));
+%       end
+%       obj.lcmgl.glEnd();
+%       obj.lcmgl.switchBuffers();
+    end
   end
 end
