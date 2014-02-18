@@ -76,6 +76,7 @@ classdef RobotPlanPublisherWKeyFrames_PR2
             %javaArray('java.lang.Boolean', msg.num_states);
             plan = javaArray('drc.robot_state_t', msg.num_states);
             float_offset = 0;
+            %plot(T(:),X(offset+num_dofs+1,:),T(:),X(offset+num_dofs+2,:),T(:),X(offset+num_dofs+3,:));
             for i=1:msg.num_states,        
                 is_keyframe(i) = (X(1,i)==1.0);
                 is_breakpoint(i) = (X(2,i)==1.0);

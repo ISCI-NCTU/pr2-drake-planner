@@ -18,15 +18,17 @@ cabinet_reach_pos = [1,0,1]'; % specify drawer pose (x,y,z)
 cabinet_open_pos =  [0,-1,1]';  
 
 
-T = 50; % seconds
+T = 10; % seconds
 basefixedOnReach = false;
 basefixedOnLine = true;
+torsofixedOnReach = true;
+torsofixedOnCircle = true;
 pos_center = [1,0,1]';
 radius = 0.5;
 deg1 = pi/2;
 deg2 = pi;
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-    planner.createReachAndCirclePlan(q0, pos_center, radius, deg1, deg2, T, basefixedOnReach, basefixedOnLine);
+    planner.createReachAndCirclePlan(q0, pos_center, radius, deg1, deg2, T, basefixedOnReach, basefixedOnCircle, torsofixedOnReach, torsofixedOnCircle);
 snopt_info;
 
 kinsol = r.doKinematics(q_end(1:dof));
@@ -36,8 +38,8 @@ reality_reach2
 
 
 
+planner.publishTraj(xtraj,1);
 planner.v.playback(xtraj);
-
 
 
 

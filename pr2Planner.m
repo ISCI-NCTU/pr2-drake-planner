@@ -6,8 +6,6 @@ classdef pr2Planner
   %   -createInitialReachPlan (reach to pre-grasp pose)
   %   - a) createLinePlan (move in a line)
   %   - b) createCirclePlan (move in a circle)
-  % todo: zero velocity constraints?
-  % todo: look into the fixed initial state option
   properties
     r
     doVisualization
@@ -82,28 +80,43 @@ classdef pr2Planner
       obj.publishTraj(xtraj,snopt_info);
     end
     
+    function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
+            createPointPlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
+            basefixed, torsofixed)
+      %todo: coding here
+    end
+    
     
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-            createReachAndLinePlan(obj, q0, pos_reach, pos_final, T, basefixedOnReach,basefixedOnLine)
+            createLinePlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
+            basefixed, torsofixed)
+      %todo: some coding here
+    end
+    
+    
+    function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
+            createReachAndLinePlan(obj, q0, pos_reach, pos_final, T, ...
+            basefixedOnReach,basefixedOnLine,torsofixedOnReach,torsofixedOnLine)
       Nr = 10;
-      Nl = 30;
+      Nl = 10;
       Tr = T/2;
       Tl = T;
       t_vec_r = linspace(0,Tr,Nr);
       t_vec_l = linspace(Tr,Tl,Nl);
       t_vec = linspace(0,T,Nr+Nl-1);
       Allcons = cell(0,1);
-
+      gripper_pos = repmat(pos_reach,1,Nl) + (pos_final - pos_reach)*linspace(0,1,Nl);
+      
       %% 0. draw targets
       lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
 
       lcmgl.glColor3f(1,0,1);
-      lcmgl.sphere(pos_reach,0.05,100,100);
+      lcmgl.sphere(pos_reach,0.01,100,100);
       lcmgl.glColor3f(0,0,1);
-      lcmgl.sphere(pos_final,0.05,100,100);
+      lcmgl.sphere(pos_final,0.01,100,100);
       lcmgl.glColor3f(0,1,1);
       for i =1:Nl
-          lcmgl.sphere(gripper_pos(:,i),0.05,100,100);
+          lcmgl.sphere(gripper_pos(:,i),0.01,100,100);
       end
       lcmgl.switchBuffers;
       
@@ -125,7 +138,7 @@ classdef pr2Planner
       
       % 1.4 find gripper and base indices
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      r_gripper_pt = [0.13,0,0]';
+      r_gripper_pt = [0.18,0,0]';
       base_idx = findLinkInd(obj.r,'base_link');
       base_pt = [0,0,0]';
       
@@ -142,6 +155,11 @@ classdef pr2Planner
         Allcons{end+1} = PostureChangeConstraint(obj.r,6,0,0,[0,Tr]); % base_yaw
       end
       
+      % 1.6 fix torso while doing line
+      if(torsofixedOnReach)
+        torso_id = 19;    %'torso_lift_joint'
+        Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[0,Tr]); 
+      end
       
       
       %% 2. Line trajectory
@@ -149,7 +167,7 @@ classdef pr2Planner
       
       %r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
      
-      gripper_pos = repmat(pos_reach,1,Nl) + (pos_final - pos_reach)*linspace(0,1,Nl);
+      
       for i=1:Nl,
         Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,...
             gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
@@ -165,9 +183,10 @@ classdef pr2Planner
       end
       
       % 2.2 fix torso while doing line
-      torso_id = obj.r.findJointInd('torso_lift_joint');
-      Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[Tr,Tl]); 
-      
+      if(torsofixedOnLine)
+        torso_id = 19;    %'torso_lift_joint'
+        Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[Tr,Tl]); 
+      end
       
       %% 3 compute seeds
       q_start_nom = q0;
@@ -219,7 +238,7 @@ classdef pr2Planner
     end
 
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-            createReachAndCirclePlan(obj, q0, pos_center, radius, deg1, deg2, T, basefixedOnReach,basefixedOnLine)
+            createReachAndCirclePlan(obj, q0, pos_center, radius, deg1, deg2, T, basefixedOnReach,basefixedOnCircle,torsofixedOnReach,torsofixedOnCircle)
       Nr = 30;
       Nl = 30;
       Tr = T/2;
@@ -283,6 +302,12 @@ classdef pr2Planner
         Allcons{end+1} = PostureChangeConstraint(obj.r,6,0,0,[0,Tr]); % base_yaw
       end
       
+      % 1.6 fix torso while doing circle
+      if(torsofixedOnReach)
+        %torso_id = obj.r.findJointInd('torso_lift_joint');  bad index
+        torso_id = 19;
+        Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[0,Tr]); 
+      end
       
       
       %% 2. Circle trajectory
@@ -297,7 +322,7 @@ classdef pr2Planner
             gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
       end
       
-      if(basefixedOnLine)        
+      if(basefixedOnCircle)        
         Allcons{end+1} = PostureChangeConstraint(obj.r,1,0,0,[Tr,Tl]); % base_x
         Allcons{end+1} = PostureChangeConstraint(obj.r,2,0,0,[Tr,Tl]); % base_y
         Allcons{end+1} = PostureChangeConstraint(obj.r,3,0,0,[Tr,Tl]); % base_z
@@ -306,9 +331,12 @@ classdef pr2Planner
         Allcons{end+1} = PostureChangeConstraint(obj.r,6,0,0,[Tr,Tl]); % base_yaw
       end
       
-      % 2.2 fix torso while doing line
-      torso_id = obj.r.findJointInd('torso_lift_joint');
-      Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[Tr,Tl]); 
+      % 2.2 fix torso while doing circle
+      if(torsofixedOnCircle)
+        %torso_id = obj.r.findJointInd('torso_lift_joint');  bad index
+        torso_id = 19;
+        Allcons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[Tr,Tl]); 
+      end
       
       
       %% 3 compute seeds
@@ -351,7 +379,6 @@ classdef pr2Planner
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
     
-      obj.publishTraj(xtraj, snopt_info);
     snopt_info
     infeasible_constraint
       q_end = xtraj.eval(xtraj.tspan(end));
@@ -367,31 +394,21 @@ classdef pr2Planner
       nq_pr2 = obj.r.getNumDOF;
       ts = xtraj.pp.breaks;
       q = xtraj.eval(ts);
-      xtraj_pr2 = zeros(nq_pr2,length(ts));
-      xtraj_pr2(:,:) = q(1:nq_pr2,:);
+      xtraj_pr2(:,:) = q;
       snopt_info_vector = snopt_info*ones(1, size(xtraj_pr2,2));
       
       obj.plan_pub.publish(xtraj_pr2,ts,utime,snopt_info_vector);
       
+    end
+    
+    function [ts,q,snopt_info_vector] = getTraj(obj,xtraj,snopt_info)
+      utime = etime(clock,[1970 1 1 0 0 0])*1e6;
+      nq_pr2 = obj.r.getNumDOF;
+      ts = xtraj.pp.breaks;
+      q = xtraj.eval(ts);
+      xtraj_pr2(:,:) = q;
+      snopt_info_vector = snopt_info*ones(1, size(xtraj_pr2,2));
       
-      %% render trajectory
-%       ts_line = linspace(xtraj.tspan(1),xtraj.tspan(2),200);
-%       x_line = xtraj.eval(ts_line);
-%       obj.lcmgl.glColor3f(1,0,0); 
-%       obj.lcmgl.glBegin(obj.lcmgl.LCMGL_LINES);
-%       for i=1:length(ts_line),
-%         q_line = x_line(1:nq_pr2,i);
-%         kinsol = obj.r.doKinematics(q_line);
-% %         drill_pts = obj.r.forwardKin(kinsol,obj.hand_body,...
-% %           [obj.drill_pt_on_hand, obj.drill_pt_on_hand + .0254*obj.drill_axis_on_hand]);
-% %         obj.lcmgl.line3(drill_pts(1,1),drill_pts(2,1),drill_pts(3,1),...
-% %           drill_pts(1,2),drill_pts(2,2),drill_pts(3,2));
-%         
-%         drill_pt = obj.r.forwardKin(kinsol,obj.hand_body,obj.drill_pt_on_hand);
-%         obj.lcmgl.glVertex3d(drill_pt(1),drill_pt(2),drill_pt(3));
-%       end
-%       obj.lcmgl.glEnd();
-%       obj.lcmgl.switchBuffers();
     end
   end
 end
