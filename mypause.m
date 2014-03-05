@@ -1,0 +1,3 @@
+if toPause
+    pause()
+end
