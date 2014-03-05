@@ -41,7 +41,7 @@ dof = r.getNumDOF;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 1. Prepare
-display('1. Prepare');
+disp('1. Prepare');
 %  -1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();

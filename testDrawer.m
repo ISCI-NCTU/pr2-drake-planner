@@ -1,9 +1,9 @@
 
 % 0 initialization
-toPause = false;
+toPause = true;
 getJointAvailable = false;
-toPublish = false;
-useGripperController = false;
+toPublish = true;
+useGripperController = true;
 T = 10;
 offset = 4;
 drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
@@ -39,6 +39,8 @@ planner = pr2Planner(r);
 dof = r.getNumDOF;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 1. Set to prepare pose
+disp('1. Prepare');
 % 1.1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
@@ -61,6 +63,7 @@ if toPublish
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % open gripper and wait
+disp('Open gripper');
 q0 = q_end(1:dof,1);
 % Set destination to open gripper
 qdest = q0;
@@ -82,6 +85,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 2 Pregrasp
+disp('Go to Pregrasp pose');
 % 2.1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
@@ -123,6 +127,7 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3 Go grasp
+disp('3. Go to grasp pose');
 % 3.1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
@@ -148,50 +153,55 @@ end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % close gripper and wait
+disp('Close gripper');
 q0 = q_end(1:dof,1);
 
-% 1.2 Set destination to prepare
+%  -2 Set destination to prepare
 qdest = q0;
 qdest(r.findJointInd('r_gripper_l_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
 qdest(r.findJointInd('r_gripper_r_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
 
-% 1.3 Create joint plan
+%  -3 Create joint plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
     planner.createJointPlan(q0,qdest,T,basefixed,torsofixed);
-% 1.4 Play it in viewer
+%  -4 Play it in viewer
 planner.v.playback(xtraj);
 mypause()
-% 1.5 Publish
+%  -5 Publish
 if useGripperController
   planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper close');
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 3.1 Get Current joints
+% 4. Open the drawer
+disp('4. Open the drawer');
+%  -1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
 else
   q0 = q_end(1:dof,1); 
 end
-% 3.2 Set destination to drawer open pos
+%  -2 Set destination to drawer open pos
 pos_final_xyz = release_pos;
 pos_final_orient = release_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
-% 3.3 Create line plan
+%  -3 Create line plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
             basefixed, torsofixed, keepSameOrient);
-% 3.4 Play it in viewer
+%  -4 Play it in viewer
 planner.v.playback(xtraj);
 mypause()
-% 3.5 Publish
+%  -5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Todo open gripper and wait
+% Open gripper and wait
+% Open Gripper
+disp('Open Gripper');
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
 else
@@ -216,47 +226,50 @@ if useGripperController
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
-% 3 Move to postrelease
-% 3.1 Get Current joints
+% 5. Move to postrelease
+disp('5. Move to postrelease');
+%  -1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM();
 else
   q0 = q_end(1:dof,1); 
 end
-% 3.2 Set destination to drawer open pos
+%  -2 Set destination to drawer open pos
 pos_final_xyz = postrelease_pos;
 pos_final_orient = postrelease_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
-% 3.3 Create line plan
+%  -3 Create line plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
             basefixed, torsofixed, keepSameOrient);
-% 3.4 Play it in viewer
+%  -4 Play it in viewer
 planner.v.playback(xtraj);
 mypause()
-% 3.5 Publish
+%  -5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
   mypause()
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 4.1 Get Current joints
+% 6. Back to prepare
+disp('6. Back to prepare');
+%  -1 Get Current joints
 if getJointAvailable  
   q0 = getCurrentQfromLCM()
 else
   q0 = q_end(1:dof,1);
 end
-% 4.2 Set destination to prepare
+%  -2 Set destination to prepare
 qdest = planner.getPrepareQ();
 
-% 4.3 Create joint plan
+%  -3 Create joint plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
     planner.createJointPlan(q0,qdest,T,basefixed,torsofixed);
-% 4.4 Play it in viewer
+%  -4 Play it in viewer
 planner.v.playback(xtraj);
 mypause()
-% 4.5 Publish
+%  -5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
   mypause()
