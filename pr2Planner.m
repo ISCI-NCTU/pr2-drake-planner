@@ -18,7 +18,9 @@ classdef pr2Planner
       obj.r = r;
       obj.doVisualization = false;
       
-      obj.v = obj.r.constructVisualizer;
+      options=struct();
+      options.viewer = 'BotVisualizer_PR2';
+      obj.v = obj.r.constructVisualizer(options);
       obj.v.playback_speed = 5;
       
       joint_names = r.getStateFrame.coordinates(1:r.getNumDOF);
@@ -27,9 +29,23 @@ classdef pr2Planner
       
     end
     
+    function q = getPrepareQ(obj)
+      offset = 4;
+      q = zeros(obj.r.getNumDOF, 1);
+      q(obj.r.findJointInd('r_shoulder_lift_joint')+offset) = 0;  %r_shoulder_lift_joint
+      q(obj.r.findJointInd('r_elbow_flex_joint')+offset) = -2;   %r_elbow_flex_joint
+      q(obj.r.findJointInd('r_shoulder_pan_joint')+offset) = -1.50;   %r_elbow_flex_joint
+      q(obj.r.findJointInd('l_shoulder_lift_joint')+offset) = 0;  %r_shoulder_lift_joint
+      q(obj.r.findJointInd('l_elbow_flex_joint')+offset) = -2;   %r_elbow_flex_joint
+      q(obj.r.findJointInd('l_shoulder_pan_joint')+offset) = 1.50;   %r_elbow_flex_joint
+    end
+    
     function [xtraj,snopt_info,infeasible_constraint,q_end] = createPointPlan(obj, q0, pos_final, T, basefixed)
       N = 10;
       t_vec = linspace(0,T,N);
+      
+      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
+      lcmgl.switchBuffers;
       
       % create posture constraint
       posture_constraint = PostureConstraint(obj.r);
@@ -87,7 +103,11 @@ classdef pr2Planner
       N = 10;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-            
+
+      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
+      lcmgl.switchBuffers;
+      
+      
       % 1.2 create posture constraint, stick on the ground
       posture_constraint = PostureConstraint(obj.r);
       posture_constraint.setJointLimits(3,0,0); % base_z
@@ -121,7 +141,7 @@ classdef pr2Planner
       % 1.6 create hand joint constraint for reaching
       dest_posture_constraint = PostureConstraint(obj.r, [T T]);
       for i=23:29
-        dest_posture_constraint.setJointLimits(i,qdest(i),qdest(i))  % set constraint on arm joints
+        dest_posture_constraint.setJointLimits(i,qdest(i),qdest(i));  % set constraint on arm joints
       end
       Allcons{end+1} = dest_posture_constraint;
       
@@ -146,13 +166,30 @@ infeasible_constraint
     
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createPointPlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
-            basefixed, torsofixed)
-      N = 30;
+            basefixed, torsofixed, keepSameOrient, addCollision)
+      if nargin < 9
+        addCollision = false;
+      end
+        
+      N = 10;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
       r_gripper_pt = [0.18,0,0]';
-            
+      
+      % draw start and end pose
+      kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
+      pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
+      
+      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
+  
+      lcmgl.glColor3f(1,0,1);
+      lcmgl.sphere(pos0,0.01,100,100);
+      lcmgl.glColor3f(0,0,1);
+      lcmgl.sphere(pos_final_xyz,0.01,100,100);
+      lcmgl.switchBuffers;
+      
+      
       % 1.1 create posture constraint, stick on the ground
       posture_constraint = PostureConstraint(obj.r);
       posture_constraint.setJointLimits(3,0,0); % base_z
@@ -187,14 +224,21 @@ infeasible_constraint
       Allcons{end+1} = r_gripper_cons_xyz;
       
       % 1.6 Main constraint for destination pos_final_orient
+      quat_des = pos_final_orient;
+      if keepSameOrient
+        tspan = [-inf inf];
+      else 
+        tspan = [T,T];
+      end 
       tol = 0;
-      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,pos_final_orient,tol,[T,T]);
+      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,quat_des,tol,tspan);
       
       Allcons{end+1} = r_gripper_cons_orient;
       
       % 1.7 collision constraint
-      Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,-[inf inf inf]',[pos_final_xyz(1) inf inf]');
-
+      if (addCollision)
+        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,-[inf inf inf]',[pos_final_xyz(1) inf inf]');
+      end
       % 1.8 compute seeds
       q_start_nom = q0;
       ReachCons = cell(0,0);
@@ -232,7 +276,7 @@ infeasible_constraint
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createLinePlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
             basefixed, torsofixed, keepSameOrient)
-      N = 10;
+      N = 30;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
@@ -301,7 +345,7 @@ infeasible_constraint
         tspan = [T,T];
       end 
       tol = 0;
-      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,quat_des,tol,tspan)
+      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,quat_des,tol,tspan);
       Allcons{end+1} = r_gripper_cons_orient;
       
       %% 3. compute seeds
@@ -633,7 +677,6 @@ infeasible_constraint
     
     function publishTraj(obj,xtraj,snopt_info)
       utime = etime(clock,[1970 1 1 0 0 0])*1e6;
-      nq_pr2 = obj.r.getNumDOF;
       ts = xtraj.pp.breaks;
       q = xtraj.eval(ts);
       xtraj_pr2(:,:) = q;
