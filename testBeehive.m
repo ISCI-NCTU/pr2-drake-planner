@@ -1,29 +1,30 @@
 % 0 initialization
-toPause = false;
+toPause = true;
 getJointAvailable = false;
-toPublish = true;
+toPublish = false;
 useGripperController = false;
 T = 10;
 offset = 4;
-pregrasp_pos = [0.6,-0.2,0.55]'; % pregrasp pose (x,y,z)
-pregrasp_orient =  angle2quat(0,0,0)';  
+off = [-0.1,0,0.15]';
+pregrasp_pos = [0.75,-0.5,0.7]'+off; % pregrasp pose (x,y,z)
+pregrasp_orient =  angle2quat(0,0,-0.1)';  
 
-grasp_pos = [0.7,-0.2,0.55]'; % grasp pose (x,y,z)
-grasp_orient =  angle2quat(0,0,0)';  
+grasp_pos = [0.8,-0.5,0.7]'+off; % grasp pose (x,y,z)
+grasp_orient =  angle2quat(0,0,-0.1)';  
 
-hold1_pos = [0.7,-0.2,0.60]'; % grasp pose (x,y,z)
-hold1_orient =  angle2quat(0,0,0)';  
+hold1_pos = [0.8,-0.5,0.75]'+off; % grasp pose (x,y,z)
+hold1_orient =  angle2quat(0,0,-0.1)';  
 
-hold2_pos = [0.7,-0.2,0.60]'; % grasp pose (x,y,z)
+hold2_pos = [0.8,-0.5,0.75]'+off; % grasp pose (x,y,z)
 hold2_orient =  angle2quat(0,0,1.57)'; 
 
-hold3_pos = [0.7,-0.5,0.60]'; % grasp pose (x,y,z)
+hold3_pos = [0.8,-0.7,0.75]'+off; % grasp pose (x,y,z)
 hold3_orient =  angle2quat(0,0,1.57)'; 
 
-put_pos = [0.7,-0.5,0.55]'; % grasp pose (x,y,z)
+put_pos = [0.8,-0.7,0.7]'+off; % grasp pose (x,y,z)
 put_orient =  angle2quat(0,0,1.57)'; 
 
-postput_pos = [0.6,-0.5,0.55]'; % grasp pose (x,y,z)
+postput_pos = [0.75,-0.5,0.7]'+off; % grasp pose (x,y,z)
 postput_orient =  angle2quat(0,0,1.57)'; 
 
 basefixed = true;
@@ -110,7 +111,6 @@ planner.v.playback(xtraj);
 mypause()
 % Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper open');
   mypause()
 end
@@ -159,7 +159,6 @@ planner.v.playback(xtraj);
 mypause()
 % 1.5 Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper close');
   mypause()
 end
@@ -282,7 +281,6 @@ planner.v.playback(xtraj);
 mypause()
 % Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper open');
   mypause()
 end

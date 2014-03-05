@@ -6,17 +6,21 @@ toPublish = true;
 useGripperController = true;
 T = 10;
 offset = 4;
-drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
-drawer_open_pos =  [0.4,-0.5,0.375]'; 
+%drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
+%drawer_open_pos =  [0.4,-0.5,0.375]'; 
+
+% real pr2 blue position
+drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.4,-0.52,0.45]'; 
 
 grasp_pos = drawer_close_pos; % pregrasp pose (x,y,z)
-grasp_orient =  angle2quat(0,0,0)'; 
+grasp_orient =  angle2quat(0,0,-0.1)'; 
 
 pregrasp_pos = drawer_close_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 pregrasp_orient = grasp_orient; 
 
 release_pos = drawer_open_pos; 
-release_orient =  angle2quat(0,0,0)'; 
+release_orient =  angle2quat(0,0,-0.1)'; 
 
 postrelease_pos = drawer_open_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 postrelease_orient = grasp_orient; 
@@ -24,9 +28,6 @@ postrelease_orient = grasp_orient;
 basefixed = true;
 torsofixed = true;
 
-% real pr2 blue position
-%drawer_close_pos = [0.65,-0.38,0.375]'; % specify drawer pose (x,y,z)
-%drawer_open_pos =  [0.50,-0.38,0.375]';  
 
 warning('off','all');
 DRAKE_PATH = '/home/drc/drc/software/drake';
