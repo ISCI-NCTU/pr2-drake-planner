@@ -1,3 +1,11 @@
+warning('off','all');
+DRAKE_PATH = '/home/drc/drc/software/drake';
+if(~exist('r','var'))
+  fprintf('Loading Robot Model...');
+  r = RigidBodyManipulator(strcat(DRAKE_PATH,'/examples/PR2/pr2.urdf'),struct('floating',true));
+  fprintf('Done\n');
+end
+
 while true
     
     lc = lcm.lcm.LCM.getSingleton();
@@ -15,15 +23,29 @@ while true
     end
     
     disp(sprintf('channel of received message: %s', char(msg.channel)))
-    disp(sprintf('raw bytes of received message:'))
-    disp(sprintf('%d ', msg.data'))
+    %disp(sprintf('raw bytes of received message:'))
+    %disp(sprintf('%d ', msg.data'))
     
-    m = planner.pose_t(msg.data);
+    m = planner.keypose_t(msg.data);
     
-    disp(sprintf('decoded message:\n'))
+    %disp(sprintf('decoded message:\n'))
     disp([ 'timestamp:   ' sprintf('%d ', m.utime) ])
-    disp([ 'position:    ' sprintf('%f ', m.pos) ])
-    disp([ 'orientation: ' sprintf('%f ', m.orientation) ])
+    disp([ 'grasp_position:    ' sprintf('%f ', m.grasp_pos) ])
+    disp([ 'grasp_orientation: ' sprintf('%f ', m.grasp_orientation) ])
+    disp([ 'moveto_position:    ' sprintf('%f ', m.moveto_pos) ])
+    disp([ 'moveto_orientation: ' sprintf('%f ', m.moveto_orientation) ])
+    disp([ 'postgrasp_position:    ' sprintf('%f ', m.postgrasp_pos) ])
+    disp([ 'postgrasp_orientation: ' sprintf('%f ', m.postgrasp_orientation) ])
     
+    
+    grasp_pos = reshape(m.grasp_pos, 3,1); % pregrasp pose (x,y,z)
+    grasp_orient = reshape(m.grasp_orientation, 4, 1);  
+        
+    release_pos = reshape(m.moveto_pos, 3, 1); 
+    release_orient =  reshape(m.moveto_orientation, 4, 1); 
 
+    postrelease_pos = reshape(m.postgrasp_pos, 3, 1); 
+    postrelease_orient = reshape(m.postgrasp_orientation, 4, 1); 
+    
+    testDrawer_withArt;
 end
