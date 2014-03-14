@@ -3,7 +3,7 @@
 toPause = true;
 getJointAvailable = true;
 toPublish = true;
-useGripperController = true;
+useGripperController = false;
 T = 10;
 offset = 4;
 %drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
