@@ -179,7 +179,7 @@ infeasible_constraint
       Allcons = cell(0,1);
       %r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
       %r_gripper_pt = [0.18,0,0]';
-      r_gripper_idx = findLinkInd(obj.r,'r_forearm_roll_link');
+      r_gripper_idx = findLinkInd(obj.r,'r_wrist_roll_link');
       r_gripper_pt = [0,0,0]';
       
       % draw start and end pose
@@ -286,7 +286,7 @@ infeasible_constraint
       Allcons = cell(0,1);
       %r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
       %r_gripper_pt = [0.18,0,0]';
-      r_gripper_idx = findLinkInd(obj.r,'r_forearm_roll_link');
+      r_gripper_idx = findLinkInd(obj.r,'r_wrist_roll_link');
       r_gripper_pt = [0,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));

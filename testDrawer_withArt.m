@@ -2,14 +2,33 @@
 % 0 initialization
 toPause = true;
 getJointAvailable = true; 
-toPublish = true;
-useGripperController = true;
+toPublish = false;
+useGripperController = false;
+test = false;
 T = 10;
 offset = 4;
-%drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
-%drawer_open_pos =  [0.4,-0.5,0.375]'; 
 
-%drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
+%%%%%%%%%%%%%%%%%% test %%%%%%%%%%%%%%%%%5
+if test
+drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.4,-0.5,0.375]'; 
+
+drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
+
+grasp_pos = drawer_close_pos; % pregrasp pose (x,y,z)
+grasp_orient =  angle2quat(0,0,-0.1)'; 
+
+pregrasp_pos = drawer_close_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
+pregrasp_orient = grasp_orient; 
+
+release_pos = drawer_open_pos; 
+release_orient =  angle2quat(0,0,-0.1)'; 
+
+postrelease_pos = drawer_open_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
+postrelease_orient = grasp_orient; 
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
 if getJointAvailable  
     q0 = getCurrentQfromLCM();
 end
