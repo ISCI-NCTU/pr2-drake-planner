@@ -28,8 +28,8 @@ function joint_pos = getCurrentQfromLCM()
     joint_pos = zeros(48,1);
     offset = 6;  % base xyzrpy
   
-    joint_pos((offset+1):(offset+42)) = reshape(m.joint_position(1:42), 42,1)/180*pi; 
-        
+    %joint_pos((offset+1):(offset+42)) = wrapToPi(reshape(m.joint_position(1:42), 42,1)); 
+    joint_pos((offset+1):(offset+42)) = reshape(m.joint_position(1:42), 42,1);    
     
 
 end
