@@ -143,6 +143,9 @@ classdef pr2Planner
       for i=23:29
         dest_posture_constraint.setJointLimits(i,qdest(i),qdest(i));  % set constraint on arm joints
       end
+      %for i=36:42
+      %  dest_posture_constraint.setJointLimits(i,qdest(i),qdest(i));  % set constraint on arm joints
+      %end
       Allcons{end+1} = dest_posture_constraint;
       
       % 1.7 

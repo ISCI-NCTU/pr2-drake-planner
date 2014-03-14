@@ -1,4 +1,4 @@
-function getCurrentQfromLCM()
+function joint_pos = getCurrentQfromLCM()
     
     lc = lcm.lcm.LCM.getSingleton();
     aggregator = lcm.lcm.MessageAggregator();
@@ -18,16 +18,17 @@ function getCurrentQfromLCM()
     %disp(sprintf('raw bytes of received message:'))
     %disp(sprintf('%d ', msg.data'))
     
-    m = planner.keypose_t(msg.data);
+    m = planner.pr2_state_t(msg.data);
     
     %disp(sprintf('decoded message:\n'))
     disp([ 'timestamp:   ' sprintf('%d ', m.utime) ])
     disp([ 'position:    ' sprintf('%f ', m.joint_position) ])
+    %size(m.joint_position)
     
     joint_pos = zeros(48,1);
     offset = 6;  % base xyzrpy
   
-    joint_pos((offset+1):(offset+42)) = reshape(m.joint_position(1:42), 3,1); 
+    joint_pos((offset+1):(offset+42)) = reshape(m.joint_position(1:42), 42,1)/180*pi; 
         
     
 
