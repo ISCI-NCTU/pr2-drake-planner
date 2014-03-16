@@ -177,9 +177,11 @@ infeasible_constraint
       N = 10;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
-      r_gripper_pt = [0.155,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
+      r_gripper_pt = [0,0,0]';
       
+      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      %r_gripper_pt = [0.18,0,0]';
       % draw start and end pose
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
@@ -282,8 +284,11 @@ infeasible_constraint
       N = 30;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
-      r_gripper_pt = [0.155,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
+      r_gripper_pt = [0,0,0]';
+      
+      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      %r_gripper_pt = [0.18,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
