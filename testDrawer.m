@@ -1,7 +1,7 @@
 
 % 0 initialization
 toPause = true;
-getJointAvailable = false;
+getJointAvailable = true;
 toPublish = false;
 useGripperController = false;
 T = 10;

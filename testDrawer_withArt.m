@@ -9,6 +9,7 @@ doPregrasp = true;
 doPrepare = false;
 T = 10;
 offset = 4;
+trate_open = 3;
 
 %%%%%%%%%%%%%%%%%% test %%%%%%%%%%%%%%%%%5
 if test
@@ -89,7 +90,7 @@ planner.v.playback(xtraj);
 mypause()
 % Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
+  %planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper open left');
   mypause();
 end
@@ -123,7 +124,8 @@ rpos = [];
 for i=1:length(ts)
  kinsol = r.doKinematics(q(1:dof,i));
  r_gripper_pt = [0.18,0,0]';
- reachpos = r.forwardKin(kinsol,findLinkInd(r,'r_gripper_palm_link'),r_gripper_pt); 
+ r_gripper_pt = [0.165,0,0]';
+ reachpos = r.forwardKin(kinsol,findLinkInd(r,'l_gripper_palm_link'),r_gripper_pt); 
  rpos = [rpos reachpos ];
 end
 rpos
@@ -182,7 +184,7 @@ planner.v.playback(xtraj);
 mypause()
 %  -5 Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
+  %planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper close left');
   mypause()
 end
@@ -201,7 +203,7 @@ pos_final_orient = release_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
 %  -3 Create line plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-            planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
+            planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T*trate_open, ...
             basefixed, torsofixed, keepSameOrient);
 %  -4 Play it in viewer
 planner.v.playback(xtraj);
@@ -233,7 +235,7 @@ planner.v.playback(xtraj);
 mypause()
 % 1.5 Publish
 if useGripperController
-  planner.publishTraj(xtraj,snopt_info);
+  %planner.publishTraj(xtraj,snopt_info);
   system('rosrun simple_gripper simple_gripper open left');
   mypause()
 end

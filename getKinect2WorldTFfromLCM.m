@@ -42,8 +42,6 @@ grasp_orient = quatdivide(grasp_orient', kinect2world_orient')';
 grasp_pos
 grasp_orient
 
-pregrasp_pos = grasp_pos - [0.05,0,0]';
-pregrasp_orient = grasp_orient;
 
 release_orient = quat_xyzw2wxyz(release_orient);
 release_pos = quatrotate(kinect2world_orient', (release_pos- kinect2world_pos)')';
@@ -54,6 +52,9 @@ postrelease_pos = quatrotate(kinect2world_orient', (postrelease_pos- kinect2worl
 %postrelease_pos = quatrotate(kinect2world_orient', (postrelease_pos- kinect2world_pos)')' - [0.05,0,0]';
 postrelease_orient = quatdivide(postrelease_orient', kinect2world_orient')';
 
+
+pregrasp_pos = release_pos;
+pregrasp_orient = release_orient;
 
 release_pos
 postrelease_pos

@@ -100,7 +100,7 @@ classdef pr2Planner
             createJointPlan(obj, q0, qdest, T, ...
             basefixed, torsofixed)
       
-      N = 10;
+      N = 20;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
 
@@ -174,14 +174,15 @@ infeasible_constraint
         addCollision = false;
       end
         
-      N = 10;
+      N = 50;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
-      r_gripper_pt = [0,0,0]';
+      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
+      %r_gripper_pt = [0,0,0]';
       
-      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
-      %r_gripper_pt = [0.18,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_pt = [0.18,0,0]';
+      r_gripper_pt = [0.165,0,0]';
       % draw start and end pose
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
@@ -281,14 +282,15 @@ infeasible_constraint
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createLinePlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
             basefixed, torsofixed, keepSameOrient)
-      N = 30;
+      N = 50;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
-      r_gripper_pt = [0,0,0]';
+      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
+      %r_gripper_pt = [0,0,0]';
       
-      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
-      %r_gripper_pt = [0.18,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_pt = [0.18,0,0]';
+      r_gripper_pt = [0.165,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
