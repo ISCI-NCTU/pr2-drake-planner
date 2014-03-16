@@ -177,10 +177,8 @@ infeasible_constraint
       N = 10;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      %r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      %r_gripper_pt = [0.18,0,0]';
-      r_gripper_idx = findLinkInd(obj.r,'r_wrist_roll_link');
-      r_gripper_pt = [0,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_pt = [0.155,0,0]';
       
       % draw start and end pose
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
@@ -284,10 +282,8 @@ infeasible_constraint
       N = 30;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      %r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      %r_gripper_pt = [0.18,0,0]';
-      r_gripper_idx = findLinkInd(obj.r,'r_wrist_roll_link');
-      r_gripper_pt = [0,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_pt = [0.155,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
@@ -296,7 +292,6 @@ infeasible_constraint
       
       %% 0. draw targets
       lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
-
       lcmgl.glColor3f(1,0,1);
       lcmgl.sphere(pos0,0.01,100,100);
       lcmgl.glColor3f(0,0,1);
@@ -432,7 +427,7 @@ infeasible_constraint
       
       % 1.4 find gripper and base indices
       r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      r_gripper_pt = [0.18,0,0]';
+      r_gripper_pt = [0.215,0,0]';
       
       % 1.5 create hand position constraint for reaching
       r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_reach,pos_reach,[Tr,Tr]);

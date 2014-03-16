@@ -34,21 +34,29 @@ kinect2world_orient = reshape(m.rot, 4, 1);
 kinect2world_orient = quat_xyzw2wxyz(kinect2world_orient);
 
 grasp_orient = quat_xyzw2wxyz(grasp_orient);
-moveto_orient = quat_xyzw2wxyz(moveto_orient);
-postgrasp_orient = quat_xyzw2wxyz(postgrasp_orient);
 
-grasp_pos = quatrotate(kinect2world_orient', grasp_pos')'+ kinect2world_pos;
-grasp_orient = quatmultiply(grasp_orient', kinect2world_orient')';
-
-moveto_pos = quatrotate(kinect2world_orient', moveto_pos')'+ kinect2world_pos;
-moveto_orient = quatmultiply(moveto_orient', kinect2world_orient')';
-
-postgrasp_pos = quatrotate(kinect2world_orient', postgrasp_pos')' + kinect2world_pos;
-postgrasp_orient = quatmultiply(postgrasp_orient', kinect2world_orient')';
-
+grasp_pos = quatrotate(kinect2world_orient', (grasp_pos- kinect2world_pos)')'; %;
+%grasp_orient = quatmultiply(grasp_orient', kinect2world_orient')';
+grasp_orient = quatdivide(grasp_orient', kinect2world_orient')';
 
 grasp_pos
 grasp_orient
 
-moveto_orient
-moveto_orient
+pregrasp_pos = grasp_pos - [0.05,0,0]';
+pregrasp_orient = grasp_orient;
+
+release_orient = quat_xyzw2wxyz(release_orient);
+release_pos = quatrotate(kinect2world_orient', (release_pos- kinect2world_pos)')';
+release_orient = quatdivide(release_orient', kinect2world_orient')';
+
+postrelease_orient = quat_xyzw2wxyz(postrelease_orient);
+postrelease_pos = quatrotate(kinect2world_orient', (postrelease_pos- kinect2world_pos)')';
+%postrelease_pos = quatrotate(kinect2world_orient', (postrelease_pos- kinect2world_pos)')' - [0.05,0,0]';
+postrelease_orient = quatdivide(postrelease_orient', kinect2world_orient')';
+
+
+release_pos
+postrelease_pos
+
+
+

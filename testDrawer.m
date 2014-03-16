@@ -1,8 +1,8 @@
 
 % 0 initialization
 toPause = true;
-getJointAvailable = true;
-toPublish = true;
+getJointAvailable = false;
+toPublish = false;
 useGripperController = false;
 T = 10;
 offset = 4;
@@ -10,8 +10,8 @@ offset = 4;
 %drawer_open_pos =  [0.4,-0.5,0.375]'; 
 
 % real pr2 blue position
-drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
-drawer_open_pos =  [0.4,-0.52,0.45]'; 
+drawer_close_pos = [0.62,0.52,0.45]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.4,0.52,0.45]'; 
 
 grasp_pos = drawer_close_pos; % pregrasp pose (x,y,z)
 grasp_orient =  angle2quat(0,0,-0.1)'; 
@@ -40,7 +40,7 @@ planner = pr2Planner(r);
 dof = r.getNumDOF;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 1. Set to prepare pose
+%1. Set to prepare pose
 disp('1. Prepare');
 % 1.1 Get Current joints
 if getJointAvailable  
