@@ -1,0 +1,11 @@
+package planner;
+
+struct force_torque_t
+{
+   int64_t utime;
+   float l_hand_force[3];
+   float l_hand_torque[3];
+
+   float r_hand_force[3];
+   float r_hand_torque[3];
+}

@@ -11,22 +11,23 @@ classdef pr2Planner
     doVisualization
     v
     plan_pub
+    leftOrRight
   end
   
   methods 
-    function obj = pr2Planner(r)
+    function obj = pr2Planner(r, leftOrRight)
       obj.r = r;
       obj.doVisualization = false;
       
       options=struct();
-      options.viewer = 'BotVisualizer_PR2';
+      options.viewer = 'BotVisualizer';
       obj.v = obj.r.constructVisualizer(options);
       obj.v.playback_speed = 5;
       
       joint_names = r.getStateFrame.coordinates(1:r.getNumDOF);
       % todo add: walk plan publisher
       obj.plan_pub = RobotPlanPublisherWKeyFrames_PR2('CANDIDATE_MANIP_PLAN',true,joint_names);
-      
+      obj.leftOrRight = leftOrRight;
     end
     
     function q = getPrepareQ(obj)
@@ -68,7 +69,7 @@ classdef pr2Planner
       
       % create hand position constraints
       %n_pts = 4;
-      bodyA_idx = findLinkInd(obj.r,'r_gripper_palm_link');
+      bodyA_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
       r_gripper_pt = [0,0,0]';
       r_gripper_cons = WorldPositionConstraint(obj.r,bodyA_idx,r_gripper_pt,pos_final,pos_final,[1,1]);
   
@@ -98,14 +99,14 @@ classdef pr2Planner
 
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createJointPlan(obj, q0, qdest, T, ...
-            basefixed, torsofixed)
+            basefixed, torsofixed, N_)
       
       N = 20;
+      if exist('N_', 'var')
+        N = N_;
+      end
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-
-      lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
-      lcmgl.switchBuffers;
       
       
       % 1.2 create posture constraint, stick on the ground
@@ -157,8 +158,8 @@ classdef pr2Planner
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-snopt_info
-infeasible_constraint
+      fprintf('snopt_info=%d\n', snopt_info);
+      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
       
       if obj.doVisualization && snopt_info <= 10
@@ -174,15 +175,14 @@ infeasible_constraint
         addCollision = false;
       end
         
-      N = 50;
+      N = 20;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
       %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
       %r_gripper_pt = [0,0,0]';
       
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
       r_gripper_pt = [0.18,0,0]';
-      r_gripper_pt = [0.165,0,0]';
       % draw start and end pose
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
@@ -258,8 +258,8 @@ infeasible_constraint
       [q_reach_nom,snopt_info_ik,infeasible_constraint_ik1] = ...
           inverseKin(obj.r,q_start_nom,q_start_nom,...
           ReachCons{:}, ikoptions);
-snopt_info_ik
-infeasible_constraint_ik1
+      fprintf('snopt_info_ik=%d\n', snopt_info_ik);
+      if (~isempty(infeasible_constraint_ik1)); display(infeasible_constraint_ik1); end
       qtraj_guess = PPTrajectory(foh([0 T],[q0, q_reach_nom]));
       
       
@@ -268,8 +268,8 @@ infeasible_constraint_ik1
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-snopt_info
-infeasible_constraint
+      fprintf('snopt_info=%d\n', snopt_info);
+      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
       
       if obj.doVisualization && snopt_info <= 10
@@ -281,16 +281,19 @@ infeasible_constraint
     
     function [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             createLinePlanWOrient(obj, q0, pos_final_xyz, pos_final_orient, T, ...
-            basefixed, torsofixed, keepSameOrient)
-      N = 50;
+            basefixed, torsofixed, keepSameOrient, N_)
+      N = 20;
+      if exist('N_', 'var')
+        N = N_;
+      end
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
       %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
       %r_gripper_pt = [0,0,0]';
       
-      r_gripper_idx = findLinkInd(obj.r,'l_gripper_palm_link');
+      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
       r_gripper_pt = [0.18,0,0]';
-      r_gripper_pt = [0.165,0,0]';
+      %r_gripper_pt = [0.165,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
       pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
@@ -379,8 +382,8 @@ infeasible_constraint
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-    snopt_info
-    infeasible_constraint
+      fprintf('snopt_info=%d\n', snopt_info);
+      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
 
       % do visualize
@@ -433,8 +436,8 @@ infeasible_constraint
       ikoptions = ikoptions.setDebug(true);
       
       % 1.4 find gripper and base indices
-      r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      r_gripper_pt = [0.215,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
+      r_gripper_pt = [0.18,0,0]';
       
       % 1.5 create hand position constraint for reaching
       r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
@@ -495,9 +498,9 @@ infeasible_constraint
       [q_reach_nom,snopt_info_ik,infeasible_constraint_ik1] = ...
           inverseKin(obj.r,q_start_nom,q_start_nom,...
           ReachCons{:}, ikoptions);
-    snopt_info_ik
-    infeasible_constraint_ik1
     
+      fprintf('snopt_info_ik=%d\n', snopt_info_ik);
+      if (~isempty(infeasible_constraint_ik1)); display(infeasible_constraint_ik1); end
     
       FinalCons = cell(0,0);
       for i=1:length(Allcons)
@@ -511,8 +514,8 @@ infeasible_constraint
       [q_final_nom,snopt_info_ik,infeasible_constraint_ik2] = ...
           inverseKin(obj.r,q_reach_nom,q_reach_nom,...
           FinalCons{:}, ikoptions);
-    snopt_info_ik
-    infeasible_constraint_ik2
+      fprintf('snopt_info_ik=%d\n', snopt_info_ik);
+      if (~isempty(infeasible_constraint_ik2)); display(infeasible_constraint_ik2); end
     
     
       
@@ -522,8 +525,8 @@ infeasible_constraint
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-    snopt_info
-    infeasible_constraint
+      fprintf('snopt_info=%d\n', snopt_info);
+      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
 
       % do visualize
@@ -579,8 +582,8 @@ infeasible_constraint
       ikoptions = ikoptions.setDebug(true);
       
       % 1.4 find gripper and base indices
-      r_gripper_idx = findLinkInd(obj.r,'r_gripper_palm_link');
-      r_gripper_pt = [0.13,0,0]';
+      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
+      r_gripper_pt = [0.18,0,0]';
       base_idx = findLinkInd(obj.r,'base_link');
       base_pt = [0,0,0]';
       
@@ -647,9 +650,9 @@ infeasible_constraint
       [q_reach_nom,snopt_info_ik,infeasible_constraint_ik1] = ...
           inverseKin(obj.r,q_start_nom,q_start_nom,...
           ReachCons{:}, ikoptions);
-    snopt_info_ik
-    infeasible_constraint_ik1
     
+      fprintf('snopt_info_ik=%d\n', snopt_info_ik);
+      if (~isempty(infeasible_constraint_ik1)); display(infeasible_constraint_ik1); end
     
       FinalCons = cell(0,0);
       FinalCons{end+1} = PostureChangeConstraint(obj.r,torso_id,0,0,[-inf,inf]); 
@@ -664,8 +667,8 @@ infeasible_constraint
       [q_final_nom,snopt_info_ik,infeasible_constraint_ik2] = ...
           inverseKin(obj.r,q_reach_nom,q_reach_nom,...
           FinalCons{:}, ikoptions);
-    snopt_info_ik
-    infeasible_constraint_ik2
+      fprintf('snopt_info_ik=%d\n', snopt_info_ik);
+      if (~isempty(infeasible_constraint_ik2)); display(infeasible_constraint_ik2); end
       qtraj_guess = PPTrajectory(foh([0 Tr Tl],[q_start_nom, q_reach_nom, q_final_nom]));
       
       %% 4. do IK Traj
@@ -673,9 +676,10 @@ infeasible_constraint
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-    
-    snopt_info
-    infeasible_constraint
+      
+      fprintf('snopt_info=%d\n', snopt_info);
+      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
+      
       q_end = xtraj.eval(xtraj.tspan(end));
 
       % do visualize

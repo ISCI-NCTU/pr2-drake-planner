@@ -1,0 +1,15 @@
+package planner;
+
+struct keypose_t
+{
+    int64_t utime;              // utime that the actual measurement took place
+
+    double grasp_pos[3];             // move to drawer knob pos and grasp
+    double grasp_orientation[4];   
+    
+    double moveto_pos[3];            // where to move after grasp
+    double moveto_orientation[4];     
+    
+    double postgrasp_pos[3];         // where to move after release grasp
+    double postgrasp_orientation[4];     
+}
