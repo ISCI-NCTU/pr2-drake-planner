@@ -1,6 +1,6 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PID control
-ftoffset = 12.8;
+ftoffset = 13.4;
 controlGripper('close', leftOrRight);
 ft = getFTfromLCM();   %transformForceToGlobal
 

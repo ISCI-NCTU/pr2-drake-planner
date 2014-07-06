@@ -159,7 +159,7 @@ classdef pr2Planner
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
       fprintf('snopt_info=%d\n', snopt_info);
-      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
+      if (~isempty(infeasible_constraint)); displayInfeasible(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
       
       if obj.doVisualization && snopt_info <= 10
@@ -259,7 +259,7 @@ classdef pr2Planner
           inverseKin(obj.r,q_start_nom,q_start_nom,...
           ReachCons{:}, ikoptions);
       fprintf('snopt_info_ik=%d\n', snopt_info_ik);
-      if (~isempty(infeasible_constraint_ik1)); display(infeasible_constraint_ik1); end
+      if (~isempty(infeasible_constraint_ik1)); displayInfeasible(infeasible_constraint_ik1); end
       qtraj_guess = PPTrajectory(foh([0 T],[q0, q_reach_nom]));
       
       
@@ -269,7 +269,7 @@ classdef pr2Planner
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
       fprintf('snopt_info=%d\n', snopt_info);
-      if (~isempty(infeasible_constraint)); display(infeasible_constraint); end
+      if (~isempty(infeasible_constraint)); displayInfeasible(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
       
       if obj.doVisualization && snopt_info <= 10

@@ -1,12 +1,12 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % PID control
-ftoffset = 12.8;
+ftoffset = 13.4;
 controlGripper('close', leftOrRight);
 ft = getFTfromLCM();   %transformForceToGlobal
 
 force_x = -(ft(1) - ftoffset);
 torque_x = ft(4);
-force_threshold = 1;
+force_threshold = 0.5;
 fprintf('force_x = %f, torque_x = %f\n', force_x, torque_x);
 while abs(force_x) > force_threshold
   %grasp_pos(3) = 0.002 * force_x + grasp_pos(3);  %% or set directly to current pos

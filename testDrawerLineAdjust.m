@@ -7,27 +7,21 @@ useGripperController = true;
 T = 10;
 offset = 4;
 leftOrRight = 'r';  % left hand or right hand
-torsoHigh = 1;
 
 % real drawer knob position
 drawer_close_pos = [0.82,-0.52,1.19]'; % specify drawer pose (x,y,z)
 drawer_open_pos =  [0.4,-0.52,1.19]'; 
-
-% drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
-% drawer_open_pos =  [0.4,-0.52,0.45]'; 
-% if torsoHigh == 1
-%   drawer_close_pos(3) = drawer_close_pos(3)+0.2;
-%   drawer_open_pos(3) = drawer_open_pos(3)+0.2;
-% end
+drawer_close_pos = [0.82782; -0.18899; 0.79926+0.02]; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.82782-0.2; -0.18899; 0.79926+0.02];
 
 grasp_pos = drawer_close_pos; % pregrasp pose (x,y,z)
-grasp_orient =  angle2quat(0,0,1.57-0.1)'; 
+grasp_orient =  angle2quat(0,0,1.57-0.18)';   % -0.18 to make it horizontal
 
 pregrasp_pos = drawer_close_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 pregrasp_orient = grasp_orient; 
 
 release_pos = drawer_open_pos; 
-release_orient =  angle2quat(0,0,1.57-0.1)'; 
+release_orient =  angle2quat(0,0,1.57-0.18)'; 
 
 postrelease_pos = drawer_open_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 postrelease_orient = grasp_orient; 
@@ -35,7 +29,8 @@ postrelease_orient = grasp_orient;
 basefixed = true;
 torsofixed = true;
 
-
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%  Initialize the planner with robot model
 warning('off','all');
 DRAKE_PATH = '/home/drc/drc/software/drake';
 if(~exist('r','var'))
@@ -46,6 +41,7 @@ end
 planner = pr2Planner(r, leftOrRight);
 dof = r.getNumDOF;
 planner.leftOrRight = leftOrRight;  
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %1. Set to prepare pose
 disp('1. Prepare');
@@ -67,7 +63,6 @@ mypause()
 % 1.5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -131,7 +126,6 @@ mypause()
 % 2.5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 
@@ -146,20 +140,18 @@ else
 end
 %  -2 Set destination to drawer open pos
 pos_final_xyz = grasp_pos;   
-%pos_final_xyz(3) = pos_final_xyz(3) + 0.05;
 pos_final_orient = grasp_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
 %  -3 Create line plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
-            planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
-            basefixed, torsofixed, keepSameOrient);
+            planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T*0.2, ...
+            basefixed, torsofixed, keepSameOrient, 5);
 %  -4 Play it in viewer
 planner.v.playback(xtraj);
 mypause()
 %  -5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 
@@ -185,6 +177,13 @@ if useGripperController
   controlGripper('close', leftOrRight);
   mypause()
 end
+
+
+
+
+
+%testPID
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 4. Open the drawer
 disp('4. Open the drawer');
@@ -195,7 +194,14 @@ else
   q0 = q_end(1:dof,1); 
 end
 %  -2 Set destination to drawer open pos
-pos_final_xyz = release_pos;
+
+kinsol = r.doKinematics(q0(1:dof,1));
+gripper_pt = [0.18,0,0]';
+currpos = r.forwardKin(kinsol,findLinkInd(r,sprintf('%s_gripper_palm_link', leftOrRight)), gripper_pt); 
+currpos(1) = currpos(1) - 0.1;
+
+
+pos_final_xyz = currpos;
 pos_final_orient = release_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
 %  -3 Create line plan
@@ -236,54 +242,3 @@ if useGripperController
   controlGripper('open', leftOrRight);
   mypause()
 end
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-
-% 5. Move to postrelease
-disp('5. Move to postrelease');
-%  -1 Get Current joints
-if getJointAvailable  
-  q0 = getCurrentQfromLCM();
-else
-  q0 = q_end(1:dof,1); 
-end
-%  -2 Set destination to drawer open pos
-pos_final_xyz = postrelease_pos;
-pos_final_orient = postrelease_orient;  % (yaw, pitch, roll)
-keepSameOrient = true;
-%  -3 Create line plan
-[xtraj,snopt_info,infeasible_constraint,q_end] = ...
-            planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
-            basefixed, torsofixed, keepSameOrient);
-%  -4 Play it in viewer
-planner.v.playback(xtraj);
-mypause()
-%  -5 Publish
-if toPublish
-  planner.publishTraj(xtraj,snopt_info);
-  mypause()
-end
-
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 6. Back to prepare
-disp('6. Back to prepare');
-%  -1 Get Current joints
-if getJointAvailable  
-  q0 = getCurrentQfromLCM()
-else
-  q0 = q_end(1:dof,1);
-end
-%  -2 Set destination to prepare
-qdest = planner.getPrepareQ();
-
-%  -3 Create joint plan
-[xtraj,snopt_info,infeasible_constraint,q_end] = ...
-    planner.createJointPlan(q0,qdest,T,basefixed,torsofixed);
-%  -4 Play it in viewer
-planner.v.playback(xtraj);
-mypause()
-%  -5 Publish
-if toPublish
-  planner.publishTraj(xtraj,snopt_info);
-  mypause()
-end
-

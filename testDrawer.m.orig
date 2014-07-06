@@ -1,33 +1,34 @@
 
 % 0 initialization
+<<<<<<< HEAD
+inSim = false;
+realRobot = true;
+T = 3;
+offset = 4;
+%drawer_close_pos = [0.6,-0.5,0.375]'; % specify drawer pose (x,y,z)
+%drawer_open_pos =  [0.5,-0.5,0.375]';  
+
+% real pr2 blue position
+drawer_close_pos = [0.65,-0.38,0.375]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.50,-0.38,0.375]';  
+=======
 toPause = true;
-getJointAvailable = true;
+getJointAvailable = false;
 toPublish = true;
 useGripperController = true;
 T = 10;
 offset = 4;
-leftOrRight = 'r';  % left hand or right hand
-torsoHigh = 1;
-
-% real drawer knob position
-drawer_close_pos = [0.82,-0.52,1.19]'; % specify drawer pose (x,y,z)
-drawer_open_pos =  [0.4,-0.52,1.19]'; 
-
-% drawer_close_pos = [0.62,-0.52,0.45]'; % specify drawer pose (x,y,z)
-% drawer_open_pos =  [0.4,-0.52,0.45]'; 
-% if torsoHigh == 1
-%   drawer_close_pos(3) = drawer_close_pos(3)+0.2;
-%   drawer_open_pos(3) = drawer_open_pos(3)+0.2;
-% end
+drawer_close_pos = [0.62,-0.5,0.375]'; % specify drawer pose (x,y,z)
+drawer_open_pos =  [0.4,-0.5,0.375]'; 
 
 grasp_pos = drawer_close_pos; % pregrasp pose (x,y,z)
-grasp_orient =  angle2quat(0,0,1.57-0.1)'; 
+grasp_orient =  angle2quat(0,0,0)'; 
 
 pregrasp_pos = drawer_close_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 pregrasp_orient = grasp_orient; 
 
 release_pos = drawer_open_pos; 
-release_orient =  angle2quat(0,0,1.57-0.1)'; 
+release_orient =  angle2quat(0,0,0)'; 
 
 postrelease_pos = drawer_open_pos - [0.05,0,0]'; % pregrasp pose (x,y,z)
 postrelease_orient = grasp_orient; 
@@ -35,7 +36,11 @@ postrelease_orient = grasp_orient;
 basefixed = true;
 torsofixed = true;
 
+% real pr2 blue position
+%drawer_close_pos = [0.65,-0.38,0.375]'; % specify drawer pose (x,y,z)
+%drawer_open_pos =  [0.50,-0.38,0.375]';  
 
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
 warning('off','all');
 DRAKE_PATH = '/home/drc/drc/software/drake';
 if(~exist('r','var'))
@@ -43,11 +48,65 @@ if(~exist('r','var'))
   r = RigidBodyManipulator(strcat(DRAKE_PATH,'/examples/PR2/pr2.urdf'),struct('floating',true));
   fprintf('Done\n');
 end
-planner = pr2Planner(r, leftOrRight);
+planner = pr2Planner(r);
 dof = r.getNumDOF;
-planner.leftOrRight = leftOrRight;  
+<<<<<<< HEAD
+basefixed = true;
+torsofixed = true;
+
+
+% 1.1 Get Current joints
+if inSim  
+  q0 = getCurrentQfromLCM();
+else
+  q0 = zeros(dof, 1);
+end
+% 1.2 Set destination to prepare
+qdest = zeros(dof, 1);
+%qdest(r.findJointInd('r_shoulder_lift_joint')+offset) = 0.8;  %r_shoulder_lift_joint
+%qdest(r.findJointInd('r_elbow_flex_joint')+offset) = -2;   %r_elbow_flex_joint
+qdest(24) = 0.8;  %r_shoulder_lift_joint
+qdest(26) = -2;   %r_elbow_flex_joint
+q0 = qdest;  % hack
+% 1.3 Create joint plan
+[xtraj,snopt_info,infeasible_constraint,q_end] = ...
+    planner.createJointPlan(q0,qdest,T,basefixed,torsofixed)
+% 1.4 Play it in viewer
+planner.v.playback(xtraj);
+pause()
+% 1.5 Publish
+planner.publishTraj(xtraj,snopt_info);
+pause()
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Todo open gripper and wait
+if inSim  
+  q0 = getCurrentQfromLCM();
+else
+  q0 = q_end(1:dof,1);
+  % 1.2 Set destination to prepare
+  qdest = q0;
+  qdest(r.findJointInd('r_gripper_l_finger_joint')+offset) = 0.2;  %r_gripper_l_finger_joint
+  qdest(r.findJointInd('r_gripper_r_finger_joint')+offset) = 0.2;  %r_gripper_l_finger_joint
+
+  % 1.3 Create joint plan
+  [xtraj,snopt_info,infeasible_constraint,q_end] = ...
+      planner.createJointPlan(q0,qdest,T,basefixed,torsofixed)
+  % 1.4 Play it in viewer
+  planner.v.playback(xtraj);
+  pause()
+  % 1.5 Publish
+  planner.publishTraj(xtraj,snopt_info);
+  system('rosrun simple_gripper simple_gripper open');
+  pause()
+end
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 2.1 Get Current joints
+if inSim  
+=======
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%1. Set to prepare pose
+% 1. Set to prepare pose
 disp('1. Prepare');
 % 1.1 Get Current joints
 if getJointAvailable  
@@ -67,7 +126,6 @@ mypause()
 % 1.5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -88,7 +146,7 @@ mypause()
 % Publish
 if useGripperController
   planner.publishTraj(xtraj,snopt_info);
-  controlGripper('open', leftOrRight);
+  system('rosrun simple_gripper simple_gripper open');
   mypause()
 end
 
@@ -97,11 +155,54 @@ end
 disp('Go to Pregrasp pose');
 % 2.1 Get Current joints
 if getJointAvailable  
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
   q0 = getCurrentQfromLCM();
 else
   q0 = q_end(1:dof,1); %% todo
 end
 % 2.2 Set destination to reach
+<<<<<<< HEAD
+pos_final_xyz = drawer_close_pos;
+pos_final_orient = angle2quat(0,0,1.57)';  % (yaw, pitch, roll)
+
+% 2.3 Create joint plan
+[xtraj,snopt_info,infeasible_constraint,q_end] = ...
+            planner.createPointPlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
+            basefixed, torsofixed);
+        
+% 2.4 Play it in viewer
+planner.v.playback(xtraj);
+pause()
+% 2.5 Publish
+planner.publishTraj(xtraj,snopt_info);
+pause()
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Todo close gripper and wait
+if inSim  
+  q0 = getCurrentQfromLCM();
+else
+  q0 = q_end(1:dof,1);
+  
+  % 1.2 Set destination to prepare
+  qdest = q0;
+  qdest(r.findJointInd('r_gripper_l_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
+  qdest(r.findJointInd('r_gripper_r_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
+
+  % 1.3 Create joint plan
+  [xtraj,snopt_info,infeasible_constraint,q_end] = ...
+      planner.createJointPlan(q0,qdest,T,basefixed,torsofixed)
+  % 1.4 Play it in viewer
+  planner.v.playback(xtraj);
+  pause()
+  % 1.5 Publish
+  planner.publishTraj(xtraj,snopt_info);
+  system('rosrun simple_gripper simple_gripper close');
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% 3.1 Get Current joints
+if inSim  
+=======
 pos_final_xyz = pregrasp_pos;
 pos_final_orient = pregrasp_orient;  % (yaw, pitch, roll)
 
@@ -131,35 +232,68 @@ mypause()
 % 2.5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % 3 Go grasp
 disp('3. Go to grasp pose');
-%  -1 Get Current joints
+% 3.1 Get Current joints
 if getJointAvailable  
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
   q0 = getCurrentQfromLCM();
 else
   q0 = q_end(1:dof,1); 
 end
-%  -2 Set destination to drawer open pos
-pos_final_xyz = grasp_pos;   
-%pos_final_xyz(3) = pos_final_xyz(3) + 0.05;
+% 3.2 Set destination to drawer open pos
+<<<<<<< HEAD
+pos_final_xyz = drawer_open_pos;
+pos_final_orient = angle2quat(0,0,1.57)';  % (yaw, pitch, roll)
+=======
+pos_final_xyz = grasp_pos;
 pos_final_orient = grasp_orient;  % (yaw, pitch, roll)
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
 keepSameOrient = true;
-%  -3 Create line plan
+% 3.3 Create line plan
 [xtraj,snopt_info,infeasible_constraint,q_end] = ...
             planner.createLinePlanWOrient(q0, pos_final_xyz, pos_final_orient, T, ...
             basefixed, torsofixed, keepSameOrient);
-%  -4 Play it in viewer
+% 3.4 Play it in viewer
 planner.v.playback(xtraj);
+<<<<<<< HEAD
+% 3.5 Publish
+planner.publishTraj(xtraj,snopt_info);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+% Todo open gripper and wait
+if inSim  
+  q0 = getCurrentQfromLCM();
+else
+  q0 = q_end(1:dof,1);
+  % 1.2 Set destination to prepare
+  qdest = q0;
+  qdest(r.findJointInd('r_gripper_l_finger_joint')+offset) = 0.2;  %r_gripper_l_finger_joint
+  qdest(r.findJointInd('r_gripper_r_finger_joint')+offset) = 0.2;  %r_gripper_l_finger_joint
+
+  % 1.3 Create joint plan
+  [xtraj,snopt_info,infeasible_constraint,q_end] = ...
+      planner.createJointPlan(q0,qdest,T,basefixed,torsofixed)
+  % 1.4 Play it in viewer
+  planner.v.playback(xtraj);
+  pause()
+  % 1.5 Publish
+  planner.publishTraj(xtraj,snopt_info);
+  system('rosrun simple_gripper simple_gripper open');
+  pause()
+end
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+% 4.1 Get Current joints
+if inSim  
+=======
 mypause()
-%  -5 Publish
+% 3.5 Publish
 if toPublish
   planner.publishTraj(xtraj,snopt_info);
-  vizAction
   mypause()
 end
 
@@ -168,7 +302,7 @@ end
 disp('Close gripper');
 q0 = q_end(1:dof,1);
 
-%  -2 Set destination to prepare for visualization
+%  -2 Set destination to prepare
 qdest = q0;
 qdest(r.findJointInd('r_gripper_l_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
 qdest(r.findJointInd('r_gripper_r_finger_joint')+offset) = 0.1;  %r_gripper_l_finger_joint
@@ -181,8 +315,8 @@ planner.v.playback(xtraj);
 mypause()
 %  -5 Publish
 if useGripperController
-  %planner.publishTraj(xtraj,snopt_info);
-  controlGripper('close', leftOrRight);
+  planner.publishTraj(xtraj,snopt_info);
+  system('rosrun simple_gripper simple_gripper close');
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -233,7 +367,7 @@ mypause()
 % 1.5 Publish
 if useGripperController
   planner.publishTraj(xtraj,snopt_info);
-  controlGripper('open', leftOrRight);
+  system('rosrun simple_gripper simple_gripper open');
   mypause()
 end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -268,10 +402,27 @@ end
 disp('6. Back to prepare');
 %  -1 Get Current joints
 if getJointAvailable  
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
   q0 = getCurrentQfromLCM()
 else
   q0 = q_end(1:dof,1);
 end
+<<<<<<< HEAD
+% 4.2 Set destination to prepare
+qdest = zeros(dof, 1);
+qdest(r.findJointInd('r_shoulder_lift_joint')+offset) = 0.8;  %r_shoulder_lift_joint
+qdest(r.findJointInd('r_elbow_flex_joint')+offset) = -2;   %r_elbow_flex_joint
+
+% 4.3 Create joint plan
+[xtraj,snopt_info,infeasible_constraint,q_end] = ...
+    planner.createJointPlan(q0,qdest,T,basefixed,torsofixed)
+% 4.4 Play it in viewer
+planner.v.playback(xtraj);
+pause()
+% 4.5 Publish
+planner.publishTraj(xtraj,snopt_info);
+pause()
+=======
 %  -2 Set destination to prepare
 qdest = planner.getPrepareQ();
 
@@ -286,4 +437,5 @@ if toPublish
   planner.publishTraj(xtraj,snopt_info);
   mypause()
 end
+>>>>>>> 8f797ac37cfe0b9c49d49026b49afc98a2438f66
 
