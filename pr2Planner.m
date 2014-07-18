@@ -352,7 +352,7 @@ classdef pr2Planner
       % 1.6 Main constraint for destination pos_final_orient
       quat_des = pos_final_orient;
       if keepSameOrient
-        tspan = [-inf inf];
+        tspan = [0.1*T inf];  % give it a little tolerance at the beginning
       else 
         tspan = [T,T];
       end 
