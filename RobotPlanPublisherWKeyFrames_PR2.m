@@ -19,6 +19,8 @@ classdef RobotPlanPublisherWKeyFrames_PR2
             obj.joint_names = joint_names;
         end
 
+        
+        
         function publish(obj,varargin)
             if nargin < 4
                utime = get_timestamp_now();% equivalent to bot_timestamp_now();

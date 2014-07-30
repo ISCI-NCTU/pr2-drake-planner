@@ -1,8 +1,8 @@
 package planner;
 
-struct reply_t
+struct string_t
 {
     int64_t utime;              // utime that the actual measurement took place
 
-    string err;
+    string data;
 }

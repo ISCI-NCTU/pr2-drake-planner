@@ -1,6 +1,8 @@
     
 lc = lcm.lcm.LCM.getSingleton();
 aggregator = lcm.lcm.MessageAggregator();
+aggregator.setMaxMessages(3);
+aggregator.setMaxBufferSize(2^20);  % MB
 
 lc.subscribe('KINECT_TO_WORLD', aggregator);
 
@@ -12,6 +14,14 @@ while true
         break
     end
 end
+
+
+lc.unsubscribe('KINECT_TO_WORLD',aggregator);
+%lc.close()
+
+clear aggregator
+clear lc
+    
 
 disp(sprintf('channel of received message: %s', char(msg.channel)))
 %disp(sprintf('raw bytes of received message:'))

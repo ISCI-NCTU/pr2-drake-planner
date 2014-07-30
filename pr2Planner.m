@@ -12,6 +12,11 @@ classdef pr2Planner
     v
     plan_pub
     leftOrRight
+    gripper_pt
+    gripper_frame
+    gripper_idx
+    gripper_l_finger_joint_idx
+    gripper_r_finger_joint_idx
   end
   
   methods 
@@ -28,6 +33,15 @@ classdef pr2Planner
       % todo add: walk plan publisher
       obj.plan_pub = RobotPlanPublisherWKeyFrames_PR2('CANDIDATE_MANIP_PLAN',true,joint_names);
       obj.leftOrRight = leftOrRight;
+      
+      obj.gripper_pt = [0.18,0,0]';
+      if leftOrRight == 'r'
+        obj.gripper_pt = obj.gripper_pt + [0.0356,0,0]';
+      end
+      obj.gripper_frame = sprintf('%s_gripper_palm_link', obj.leftOrRight);
+      obj.gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
+      obj.gripper_l_finger_joint_idx = findJointInd(obj.r,sprintf('%s_gripper_l_finger_joint', obj.leftOrRight));
+      obj.gripper_r_finger_joint_idx = findJointInd(obj.r,sprintf('%s_gripper_r_finger_joint', obj.leftOrRight));
     end
     
     function q = getPrepareQ(obj)
@@ -69,9 +83,7 @@ classdef pr2Planner
       
       % create hand position constraints
       %n_pts = 4;
-      bodyA_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
-      r_gripper_pt = [0,0,0]';
-      r_gripper_cons = WorldPositionConstraint(obj.r,bodyA_idx,r_gripper_pt,pos_final,pos_final,[1,1]);
+      r_gripper_cons = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,pos_final,pos_final,[1,1]);
   
       
       % compute seeds
@@ -178,14 +190,10 @@ classdef pr2Planner
       N = 20;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
-      %r_gripper_pt = [0,0,0]';
       
-      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
-      r_gripper_pt = [0.18,0,0]';
       % draw start and end pose
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
-      pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
+      pos0 = obj.r.forwardKin(kinsol,obj.gripper_idx,obj.gripper_pt);
       
       lcmgl = drake.util.BotLCMGLClient(lcm.lcm.LCM.getSingleton(),'pr2');
   
@@ -226,7 +234,7 @@ classdef pr2Planner
       end
       
       % 1.5 Main constraint for destination pos_final_xyz
-      r_gripper_cons_xyz = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_final_xyz,pos_final_xyz,[T,T]);
+      r_gripper_cons_xyz = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,pos_final_xyz,pos_final_xyz,[T,T]);
       Allcons{end+1} = r_gripper_cons_xyz;
       
       % 1.6 Main constraint for destination pos_final_orient
@@ -237,13 +245,13 @@ classdef pr2Planner
         tspan = [T,T];
       end 
       tol = 0;
-      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,quat_des,tol,tspan);
+      r_gripper_cons_orient = WorldQuatConstraint(obj.r,obj.gripper_idx,quat_des,tol,tspan);
       
       Allcons{end+1} = r_gripper_cons_orient;
       
       % 1.7 collision constraint
       if (addCollision)
-        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,-[inf inf inf]',[pos_final_xyz(1) inf inf]');
+        Allcons{end+1} = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,-[inf inf inf]',[pos_final_xyz(1) inf inf]');
       end
       % 1.8 compute seeds
       q_start_nom = q0;
@@ -288,15 +296,9 @@ classdef pr2Planner
       end
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
-      %r_gripper_idx = findLinkInd(obj.r,'l_gripper_tool_frame');
-      %r_gripper_pt = [0,0,0]';
-      
-      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
-      r_gripper_pt = [0.18,0,0]';
-      %r_gripper_pt = [0.165,0,0]';
       
       kinsol = obj.r.doKinematics(q0(1:obj.r.getNumDOF));
-      pos0 = obj.r.forwardKin(kinsol,r_gripper_idx,r_gripper_pt);
+      pos0 = obj.r.forwardKin(kinsol,obj.gripper_idx,obj.gripper_pt);
       
       gripper_pos = repmat(pos0,1,N) + (pos_final_xyz - pos0)*linspace(0,1,N);
       
@@ -345,7 +347,7 @@ classdef pr2Planner
       
       % 1.5 Main constraint for trajectory with destination pos_final_xyz
       for i=1:N,
-        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,...
+        Allcons{end+1} = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,...
             gripper_pos(:,i),gripper_pos(:,i),[t_vec(i) t_vec(i)]);
       end
       
@@ -357,7 +359,7 @@ classdef pr2Planner
         tspan = [T,T];
       end 
       tol = 0;
-      r_gripper_cons_orient = WorldQuatConstraint(obj.r,r_gripper_idx,quat_des,tol,tspan);
+      r_gripper_cons_orient = WorldQuatConstraint(obj.r,obj.gripper_idx,quat_des,tol,tspan);
       Allcons{end+1} = r_gripper_cons_orient;
       
       %% 3. compute seeds
@@ -435,12 +437,9 @@ classdef pr2Planner
       ikoptions = ikoptions.setIterationsLimit(1000000);
       ikoptions = ikoptions.setDebug(true);
       
-      % 1.4 find gripper and base indices
-      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
-      r_gripper_pt = [0.18,0,0]';
       
       % 1.5 create hand position constraint for reaching
-      r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
+      r_gripper_cons = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
       Allcons{end+1} = r_gripper_cons;
       
       if(basefixedOnReach)        
@@ -466,7 +465,7 @@ classdef pr2Planner
      
       
       for i=1:Nl,
-        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,...
+        Allcons{end+1} = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,...
             gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
       end
       
@@ -582,13 +581,11 @@ classdef pr2Planner
       ikoptions = ikoptions.setDebug(true);
       
       % 1.4 find gripper and base indices
-      r_gripper_idx = findLinkInd(obj.r,sprintf('%s_gripper_palm_link', obj.leftOrRight));
-      r_gripper_pt = [0.18,0,0]';
       base_idx = findLinkInd(obj.r,'base_link');
       base_pt = [0,0,0]';
       
       % 1.5 create hand position constraint for reaching
-      r_gripper_cons = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
+      r_gripper_cons = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,pos_reach,pos_reach,[Tr,Tr]);
       Allcons{end+1} = r_gripper_cons;
       
       if(basefixedOnReach)        
@@ -616,7 +613,7 @@ classdef pr2Planner
       %gripper_pos = repmat(pos_reach,1,Nl) + (pos_final - pos_reach)*linspace(0,1,Nl);
       
       for i=1:Nl,
-        Allcons{end+1} = WorldPositionConstraint(obj.r,r_gripper_idx,r_gripper_pt,...
+        Allcons{end+1} = WorldPositionConstraint(obj.r,obj.gripper_idx,obj.gripper_pt,...
             gripper_pos(:,i),gripper_pos(:,i),[t_vec_l(i) t_vec_l(i)]);
       end
       
@@ -689,6 +686,11 @@ classdef pr2Planner
     end
     
     function publishTraj(obj,xtraj,snopt_info)
+      if snopt_info > 10
+        fprintf('IK fail snopt_info: %d\n', snopt_info);
+        exit()
+      end
+        
       utime = etime(clock,[1970 1 1 0 0 0])*1e6;
       ts = xtraj.pp.breaks;
       q = xtraj.eval(ts);
@@ -697,6 +699,15 @@ classdef pr2Planner
       
       obj.plan_pub.publish(xtraj_pr2,ts,utime,snopt_info_vector);
       
+    end
+    
+    function publishEvent(obj, str)
+        msg = planner.string_t();
+
+        msg.utime = get_timestamp_now();
+        msg.data = str;
+
+        obj.plan_pub.lc.publish('MANIP_EVENT', msg);
     end
     
     function [ts,q,snopt_info_vector] = getTraj(obj,xtraj,snopt_info)

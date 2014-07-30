@@ -1,3 +1,3 @@
 if toPause
-    pause()
+    pause(T)
 end

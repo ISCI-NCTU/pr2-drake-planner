@@ -1,9 +1,12 @@
 function joint_pos = getCurrentQfromLCM()
     
+    ChannelName = 'PR2_STATE';
     lc = lcm.lcm.LCM.getSingleton();
     aggregator = lcm.lcm.MessageAggregator();
+    aggregator.setMaxMessages(3);
+    aggregator.setMaxBufferSize(2^20);  % MB
     
-    lc.subscribe('PR2_STATE', aggregator);
+    lc.subscribe(ChannelName, aggregator);
     
     while true
         disp waiting
@@ -13,6 +16,12 @@ function joint_pos = getCurrentQfromLCM()
             break
         end
     end
+    
+    lc.unsubscribe(ChannelName,aggregator);
+    %lc.close()
+    
+    clear aggregator
+    clear lc 
     
     disp(sprintf('channel of received message: %s', char(msg.channel)))
     %disp(sprintf('raw bytes of received message:'))

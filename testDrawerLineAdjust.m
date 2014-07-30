@@ -1,9 +1,9 @@
 
 % 0 initialization
 toPause = true;
-getJointAvailable = true;
-toPublish = true;
-useGripperController = true;
+getJointAvailable = false;
+toPublish = false;
+useGripperController = false;
 T = 10;
 offset = 4;
 leftOrRight = 'r';  % left hand or right hand
@@ -32,10 +32,11 @@ torsofixed = true;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %  Initialize the planner with robot model
 warning('off','all');
-DRAKE_PATH = '/home/drc/drc/software/drake';
 if(~exist('r','var'))
   fprintf('Loading Robot Model...');
-  r = RigidBodyManipulator(strcat(DRAKE_PATH,'/examples/PR2/pr2.urdf'),struct('floating',true));
+  r = RigidBodyManipulator(strcat(getDrakePath(),'/examples/PR2/pr2.urdf'), ...
+      struct('floating',true));
+  %r = RigidBodyManipulator('/home/drc/pr2data/pr2mm.urdf',struct('floating',true));
   fprintf('Done\n');
 end
 planner = pr2Planner(r, leftOrRight);
@@ -115,7 +116,8 @@ rpos = [];
 for i=1:length(ts)
   kinsol = r.doKinematics(q(1:dof,i));
   r_gripper_pt = [0.18,0,0]';
-  reachpos = r.forwardKin(kinsol,findLinkInd(r,'r_gripper_palm_link'),r_gripper_pt); 
+  %reachpos = r.forwardKin(kinsol,findLinkInd(r,'r_gripper_palm_link'),r_gripper_pt); 
+  reachpos = r.forwardKin(kinsol,findLinkInd(r,sprintf('%s_gripper_tool_frame', leftOrRight)),[0,0,0]'); 
   rpos = [rpos reachpos ];
 end
 rpos
@@ -185,7 +187,8 @@ end
 %testPID
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% 4. Open the drawer
+% 4. Open the drawer with PID
+
 disp('4. Open the drawer');
 %  -1 Get Current joints
 if getJointAvailable  
@@ -201,7 +204,7 @@ currpos = r.forwardKin(kinsol,findLinkInd(r,sprintf('%s_gripper_palm_link', left
 currpos(1) = currpos(1) - 0.1;
 
 
-pos_final_xyz = currpos;
+pos_final_xyz = release_pos;  % todo
 pos_final_orient = release_orient;  % (yaw, pitch, roll)
 keepSameOrient = true;
 %  -3 Create line plan
@@ -216,6 +219,9 @@ if toPublish
   planner.publishTraj(xtraj,snopt_info);
   mypause()
 end
+
+
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 % Open gripper and wait
 % Open Gripper
