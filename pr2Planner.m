@@ -113,7 +113,7 @@ classdef pr2Planner
             createJointPlan(obj, q0, qdest, T, ...
             basefixed, torsofixed, N_)
       
-      N = 20;
+      N = 10;
       if exist('N_', 'var')
         N = N_;
       end
@@ -187,7 +187,7 @@ classdef pr2Planner
         addCollision = false;
       end
         
-      N = 20;
+      N = 10;
       t_vec = linspace(0,T,N);
       Allcons = cell(0,1);
       
@@ -276,7 +276,7 @@ classdef pr2Planner
         inverseKinTraj(obj.r,...
         t_vec,qtraj_guess,qtraj_guess,...
         Allcons{:},ikoptions);
-      fprintf('snopt_info=%d\n', snopt_info);
+      fprintf('snopt_info_iktraj=%d\n', snopt_info);
       if (~isempty(infeasible_constraint)); displayInfeasible(infeasible_constraint); end
       q_end = xtraj.eval(xtraj.tspan(end));
       

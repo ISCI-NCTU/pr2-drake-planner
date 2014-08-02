@@ -1,4 +1,4 @@
 pr2-drake-planner
 =================
 
-Simple drake motion planning on PR2 robot
+Simple drake motion planning and execution on PR2 robot

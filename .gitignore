@@ -1,0 +1,8 @@
+bin/*
+build/*
+core
+pod-build/*
+*.m~
+lcmtypes/*/*
+*.log
+*~

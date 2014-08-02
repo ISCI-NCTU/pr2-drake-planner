@@ -7,8 +7,6 @@ function getActionReplyFromLCM()
     
     lc.subscribe(ChannelName, aggregator);
     
-    
-    disp waiting
     cnt = 0;
     while true
         cnt = cnt + 1;
@@ -22,7 +20,8 @@ function getActionReplyFromLCM()
         end
     end
     
-    fprintf('LCM Received: %s : %s\n', ChannelName, char(msg.data))
+    m = planner.string_t(msg.data);
+    fprintf('LCM Received: %s : %s\n', ChannelName, char(m.data))
     
     lc.unsubscribe(ChannelName, aggregator);
     %lc.close()
